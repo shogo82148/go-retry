@@ -52,3 +52,17 @@ func ExamplePolicy_Do() {
 	// #2: unstable func is called!
 	// #3: unstable func is called!
 }
+
+func ExampleMarkPermanent() {
+	policy := &retry.Policy{}
+
+	err := policy.Do(context.Background(), func() error {
+		fmt.Println("unstable func is called!")
+		return retry.MarkPermanent(errors.New("some error!"))
+	})
+	fmt.Println(err)
+
+	// Output:
+	// unstable func is called!
+	// some error!
+}

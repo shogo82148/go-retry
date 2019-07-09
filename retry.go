@@ -7,6 +7,8 @@ import (
 	"math/rand"
 	"sync"
 	"time"
+
+	"golang.org/x/xerrors"
 )
 
 // Policy is a retry policy.
@@ -49,6 +51,9 @@ func (p *Policy) Start(ctx context.Context) *Retrier {
 
 // Do executes f with retrying policy.
 // It is a shorthand of Policy.Start and Retrier.Continue.
+// If f returns an error, retry to execute f until f returns nil error.
+// If the error implements interface{ Temporary() bool } and Temporary() returns false,
+// Do doesn't retry and returns the error.
 func (p *Policy) Do(ctx context.Context, f func() error) error {
 	var err error
 	retrier := p.Start(ctx)
@@ -57,8 +62,48 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 		if err == nil {
 			return nil
 		}
+
+		// short cut for calling isPermanent and Unwrap
+		if err, ok := err.(permanentError); ok {
+			return err.error
+		}
+
+		if isPermanent(err) {
+			return err
+		}
 	}
 	return err
+}
+
+type permanentError struct {
+	error
+}
+
+// implements interface{ Temporary() bool }
+// Inspecting errors https://dave.cheney.net/2014/12/24/inspecting-errors
+func (e permanentError) Temporary() bool {
+	return false
+}
+
+// Unwrap implements xerrors.Wrapper.
+func (e permanentError) Unwrap() error {
+	return e.error
+}
+
+// MarkPermanent marks err as a permanent error.
+// It returns the error that implements interface{ Temporary() bool } and Temporary() returns false.
+func MarkPermanent(err error) error {
+	return permanentError{err}
+}
+
+func isPermanent(err error) bool {
+	var target interface {
+		Temporary() bool
+	}
+	if xerrors.As(err, &target) {
+		return !target.Temporary()
+	}
+	return false
 }
 
 func (p *Policy) randomJitter() time.Duration {
