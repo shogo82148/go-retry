@@ -98,3 +98,52 @@ func TestRetry_WithMaxCount(t *testing.T) {
 		t.Error("want not to continue, but do")
 	}
 }
+
+func TestSleepContext(t *testing.T) {
+	t.Run("normal", func(t *testing.T) {
+		start := time.Now()
+		err := sleepContext(context.Background(), time.Second)
+		if err != nil {
+			t.Error(err)
+		}
+		d := time.Since(start)
+		if d < time.Second || d > time.Second+100*time.Millisecond {
+			t.Errorf("want 1s, got %s", d)
+		}
+	})
+
+	t.Run("cancel", func(t *testing.T) {
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			cancel()
+		}()
+
+		start := time.Now()
+		err := sleepContext(ctx, time.Second)
+		if err != context.Canceled {
+			t.Error(err)
+		}
+		d := time.Since(start)
+		if d < 500*time.Millisecond || d > 600*time.Millisecond {
+			t.Errorf("want 500ms, got %s", d)
+		}
+	})
+
+	t.Run("deadline", func(t *testing.T) {
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(500*time.Microsecond))
+		defer cancel()
+
+		start := time.Now()
+		err := sleepContext(ctx, time.Second)
+		if err != context.DeadlineExceeded {
+			t.Error(err)
+		}
+		d := time.Since(start)
+		if d > 100*time.Millisecond {
+			t.Errorf("want 0s, got %s", d)
+		}
+	})
+}
