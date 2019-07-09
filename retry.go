@@ -66,8 +66,14 @@ func (r *Retrier) Continue() bool {
 	return true
 }
 
+var testSleep func(ctx context.Context, d time.Duration) error
+
 // Context supported time.Sleep
 func sleepContext(ctx context.Context, d time.Duration) error {
+	if testSleep != nil {
+		return testSleep(ctx, d)
+	}
+
 	if deadline, ok := ctx.Deadline(); ok {
 		if deadline.Sub(time.Now()) < d {
 			// skip sleeping.
