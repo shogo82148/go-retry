@@ -75,3 +75,26 @@ func TestRetry_WithJitter(t *testing.T) {
 		}
 	}
 }
+
+func TestRetry_WithMaxCount(t *testing.T) {
+	policy := &Policy{
+		MaxCount: 3,
+	}
+	retrier := policy.Start(context.Background())
+
+	// Continue returns true in first 3 calls.
+	if !retrier.Continue() {
+		t.Error("want to continue, but got not")
+	}
+	if !retrier.Continue() {
+		t.Error("want to continue, but got not")
+	}
+	if !retrier.Continue() {
+		t.Error("want to continue, but got not")
+	}
+
+	// give up :(
+	if retrier.Continue() {
+		t.Error("want not to continue, but do")
+	}
+}
