@@ -2,6 +2,10 @@ package retry
 
 import (
 	"context"
+	crand "crypto/rand"
+	"encoding/binary"
+	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -20,6 +24,9 @@ type Policy struct {
 
 	// Jitter adds random delay.
 	Jitter time.Duration
+
+	mu   sync.Mutex
+	rand *rand.Rand
 }
 
 // Retrier handles retrying.
@@ -40,6 +47,25 @@ func (p *Policy) Start(ctx context.Context) *Retrier {
 	}
 }
 
+func (p *Policy) randomJitter() time.Duration {
+	if p.Jitter == 0 {
+		return 0
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.rand == nil {
+		// initialize rand using crypto/rand
+		var seed int64
+		if err := binary.Read(crand.Reader, binary.LittleEndian, &seed); err != nil {
+			seed = time.Now().UnixNano() // fall back to timestamp
+		}
+		p.rand = rand.New(rand.NewSource(seed))
+	}
+	return time.Duration(p.rand.Int63n(int64(p.Jitter)))
+}
+
 // Continue returns whether retrying should be continued.
 func (r *Retrier) Continue() bool {
 	r.count++
@@ -53,7 +79,7 @@ func (r *Retrier) Continue() bool {
 		return false
 	}
 
-	if err := sleepContext(r.ctx, r.delay); err != nil {
+	if err := sleepContext(r.ctx, r.delay+r.policy.randomJitter()); err != nil {
 		return false
 	}
 
