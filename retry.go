@@ -27,6 +27,7 @@ type Retrier struct {
 	ctx    context.Context
 	policy *Policy
 	count  int
+	delay  time.Duration
 }
 
 // Start starts retrying
@@ -34,6 +35,8 @@ func (p *Policy) Start(ctx context.Context) *Retrier {
 	return &Retrier{
 		ctx:    ctx,
 		policy: p,
+		count:  0,
+		delay:  p.MinDelay,
 	}
 }
 
@@ -50,7 +53,35 @@ func (r *Retrier) Continue() bool {
 		return false
 	}
 
-	// TODO: sleep
+	if err := sleepContext(r.ctx, r.delay); err != nil {
+		return false
+	}
+
+	// exponential back off
+	r.delay *= 2
+	if r.delay > r.policy.MaxDelay {
+		r.delay = r.policy.MaxDelay
+	}
 
 	return true
+}
+
+// Context supported time.Sleep
+func sleepContext(ctx context.Context, d time.Duration) error {
+	if deadline, ok := ctx.Deadline(); ok {
+		if deadline.Sub(time.Now()) < d {
+			// skip sleeping.
+			// because sleepContext returns context.DeadlineExceeded even if a sleep is got.
+			return context.DeadlineExceeded
+		}
+	}
+
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
