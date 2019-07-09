@@ -7,8 +7,6 @@ import (
 	"math/rand"
 	"sync"
 	"time"
-
-	"golang.org/x/xerrors"
 )
 
 // Policy is a retry policy.
@@ -94,16 +92,6 @@ func (e permanentError) Unwrap() error {
 // It returns the error that implements interface{ Temporary() bool } and Temporary() returns false.
 func MarkPermanent(err error) error {
 	return permanentError{err}
-}
-
-func isPermanent(err error) bool {
-	var target interface {
-		Temporary() bool
-	}
-	if xerrors.As(err, &target) {
-		return !target.Temporary()
-	}
-	return false
 }
 
 func (p *Policy) randomJitter() time.Duration {
