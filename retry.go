@@ -47,6 +47,20 @@ func (p *Policy) Start(ctx context.Context) *Retrier {
 	}
 }
 
+// Do executes f with retrying policy.
+// It is a shorthand of Policy.Start and Retrier.Continue.
+func (p *Policy) Do(ctx context.Context, f func() error) error {
+	var err error
+	retrier := p.Start(ctx)
+	for retrier.Continue() {
+		err = f()
+		if err == nil {
+			return nil
+		}
+	}
+	return err
+}
+
 func (p *Policy) randomJitter() time.Duration {
 	if p.Jitter == 0 {
 		return 0

@@ -34,3 +34,21 @@ func ExamplePolicy_Start() {
 	// #3: unstableFunc is called!
 	// Success
 }
+
+func ExamplePolicy_Do() {
+	policy := &retry.Policy{
+		MaxCount: 3,
+	}
+
+	count := 0
+	policy.Do(context.Background(), func() error {
+		count++
+		fmt.Printf("#%d: unstable func is called!\n", count)
+		return errors.New("some error!")
+	})
+
+	// Output:
+	// #1: unstable func is called!
+	// #2: unstable func is called!
+	// #3: unstable func is called!
+}
