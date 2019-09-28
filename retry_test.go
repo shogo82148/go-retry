@@ -100,9 +100,11 @@ func TestRetry_WithMaxCount(t *testing.T) {
 }
 
 func TestSleepContext(t *testing.T) {
+	policy := &Policy{}
+	retrier := policy.Start(context.Background())
 	t.Run("normal", func(t *testing.T) {
 		start := time.Now()
-		err := sleepContext(context.Background(), time.Second)
+		err := retrier.sleepContext(context.Background(), time.Second)
 		if err != nil {
 			t.Error(err)
 		}
@@ -122,7 +124,7 @@ func TestSleepContext(t *testing.T) {
 		}()
 
 		start := time.Now()
-		err := sleepContext(ctx, time.Second)
+		err := retrier.sleepContext(ctx, time.Second)
 		if err != context.Canceled {
 			t.Error(err)
 		}
@@ -137,7 +139,7 @@ func TestSleepContext(t *testing.T) {
 		defer cancel()
 
 		start := time.Now()
-		err := sleepContext(ctx, time.Second)
+		err := retrier.sleepContext(ctx, time.Second)
 		if err != context.DeadlineExceeded {
 			t.Error(err)
 		}
