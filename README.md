@@ -1,5 +1,5 @@
 [![Build Status](https://github.com/shogo82148/go-retry/workflows/Test/badge.svg)](https://github.com/shogo82148/go-retry/actions)
-[![GoDoc](https://godoc.org/github.com/shogo82148/go-retry?status.svg)](https://godoc.org/github.com/shogo82148/go-retry)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/shogo82148/go-retry)](https://pkg.go.dev/github.com/shogo82148/go-retry)
 
 # retry
 
