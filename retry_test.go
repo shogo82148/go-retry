@@ -19,8 +19,11 @@ func TestRetry(t *testing.T) {
 	}()
 
 	want := []time.Duration{
+		// sleepContext is not called as first
+		0,
+
 		// exponential back off
-		0, time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second, 16 * time.Second, 32 * time.Second,
+		time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second, 16 * time.Second, 32 * time.Second,
 
 		// reach MaxDelay
 		60 * time.Second, 60 * time.Second, 60 * time.Second,
@@ -37,6 +40,38 @@ func TestRetry(t *testing.T) {
 		t.Log(delay)
 		if delay != want[i] {
 			t.Errorf("want %s, got %s", want[i], delay)
+		}
+	}
+}
+
+func TestRetry_NoMaxDelay(t *testing.T) {
+	var delay time.Duration
+	testSleep = func(ctx context.Context, d time.Duration) error {
+		delay = d
+		return nil
+	}
+	defer func() {
+		testSleep = nil
+	}()
+
+	policy := &Policy{
+		MinDelay: time.Second,
+
+		// it means that MaxDelay and MinDelay are same value
+		MaxDelay: 0,
+	}
+
+	retrier := policy.Start(context.Background())
+	if !retrier.Continue() {
+		t.Error("want to continue, but not")
+	}
+
+	for i := 0; i < 10; i++ {
+		if !retrier.Continue() {
+			t.Error("want to continue, but not")
+		}
+		if delay != time.Second {
+			t.Errorf("want %s, got %s", time.Second, delay)
 		}
 	}
 }
@@ -172,7 +207,10 @@ func TestDo_WithMaxCount(t *testing.T) {
 }
 
 func TestDo_Success(t *testing.T) {
-	policy := &Policy{}
+	policy := &Policy{
+		MinDelay: -time.Second,
+		MaxCount: -1,
+	}
 	var count int
 	err := policy.Do(context.Background(), func() error {
 		count++
