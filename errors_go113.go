@@ -4,12 +4,6 @@ package retry
 
 import "errors"
 
-func isPermanent(err error) bool {
-	var target interface {
-		Temporary() bool
-	}
-	if errors.As(err, &target) {
-		return !target.Temporary()
-	}
-	return false
+func errorsAs(err error, target interface{}) bool {
+	return errors.As(err, target)
 }
