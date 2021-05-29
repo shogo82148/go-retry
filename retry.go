@@ -74,25 +74,35 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 	return err
 }
 
+func isPermanent(err error) bool {
+	var target interface {
+		Temporary() bool
+	}
+	if errorsAs(err, &target) {
+		return !target.Temporary()
+	}
+	return false
+}
+
 type permanentError struct {
 	error
 }
 
 // implements interface{ Temporary() bool }
 // Inspecting errors https://dave.cheney.net/2014/12/24/inspecting-errors
-func (e permanentError) Temporary() bool {
+func (e *permanentError) Temporary() bool {
 	return false
 }
 
-// Unwrap implements xerrors.Wrapper.
-func (e permanentError) Unwrap() error {
+// Unwrap implements errors.Wrapper.
+func (e *permanentError) Unwrap() error {
 	return e.error
 }
 
 // MarkPermanent marks err as a permanent error.
 // It returns the error that implements interface{ Temporary() bool } and Temporary() returns false.
 func MarkPermanent(err error) error {
-	return permanentError{err}
+	return &permanentError{err}
 }
 
 func (p *Policy) randomJitter() time.Duration {
@@ -152,7 +162,7 @@ func (r *Retrier) sleepContext(ctx context.Context, d time.Duration) error {
 		return ctx.Err()
 	}
 	if deadline, ok := ctx.Deadline(); ok {
-		if deadline.Sub(time.Now()) < d {
+		if time.Until(deadline) < d {
 			// skip sleeping.
 			// because sleepContext returns context.DeadlineExceeded even if a sleep is got.
 			return context.DeadlineExceeded
