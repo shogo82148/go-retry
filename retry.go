@@ -12,17 +12,20 @@ import (
 // Policy is a retry policy.
 type Policy struct {
 	// MinDelay is a first delay for retrying.
-	// Zero means no delay.
+	// Zero or negative value means no delay.
 	MinDelay time.Duration
 
 	// MaxDelay is the maximum delay for retrying.
+	// If MaxDelay is less than MinDelay, MinDelay is used as the maximum delay.
 	MaxDelay time.Duration
 
 	// MaxCount is max retry count.
-	// 0 means retry forever.
+	// Zero or negative value means retry forever.
 	MaxCount int
 
 	// Jitter adds random delay.
+	// Zero means no jitter.
+	// Negative value shorten the delay.
 	Jitter time.Duration
 
 	mu   sync.Mutex
@@ -31,20 +34,28 @@ type Policy struct {
 
 // Retrier handles retrying.
 type Retrier struct {
-	ctx    context.Context
-	policy *Policy
-	count  int
-	delay  time.Duration
-	timer  *time.Timer
+	ctx      context.Context
+	policy   *Policy
+	count    int
+	maxCount int
+	delay    time.Duration
+	maxDelay time.Duration
+	timer    *time.Timer
 }
 
 // Start starts retrying
 func (p *Policy) Start(ctx context.Context) *Retrier {
+	maxDelay := p.MaxDelay
+	if maxDelay < p.MinDelay {
+		maxDelay = p.MinDelay
+	}
 	return &Retrier{
-		ctx:    ctx,
-		policy: p,
-		count:  0,
-		delay:  p.MinDelay,
+		ctx:      ctx,
+		policy:   p,
+		count:    0,
+		maxCount: p.MaxCount,
+		delay:    p.MinDelay,
+		maxDelay: maxDelay,
 	}
 }
 
@@ -106,7 +117,8 @@ func MarkPermanent(err error) error {
 }
 
 func (p *Policy) randomJitter() time.Duration {
-	if p.Jitter == 0 {
+	jitter := int64(p.Jitter)
+	if jitter == 0 {
 		return 0
 	}
 
@@ -121,7 +133,10 @@ func (p *Policy) randomJitter() time.Duration {
 		}
 		p.rand = rand.New(rand.NewSource(seed))
 	}
-	return time.Duration(p.rand.Int63n(int64(p.Jitter)))
+	if jitter < 0 {
+		return -time.Duration(p.rand.Int63n(-jitter))
+	}
+	return time.Duration(p.rand.Int63n(jitter))
 }
 
 // Continue returns whether retrying should be continued.
@@ -132,7 +147,7 @@ func (r *Retrier) Continue() bool {
 		return true
 	}
 
-	if r.policy.MaxCount != 0 && r.count > r.policy.MaxCount {
+	if r.maxCount > 0 && r.count > r.maxCount {
 		// max retry count is exceeded.
 		return false
 	}
@@ -143,8 +158,8 @@ func (r *Retrier) Continue() bool {
 
 	// exponential back off
 	r.delay *= 2
-	if r.delay > r.policy.MaxDelay {
-		r.delay = r.policy.MaxDelay
+	if r.delay > r.maxDelay {
+		r.delay = r.maxDelay
 	}
 
 	return true
@@ -158,7 +173,7 @@ func (r *Retrier) sleepContext(ctx context.Context, d time.Duration) error {
 		return testSleep(ctx, d)
 	}
 
-	if d == 0 {
+	if d <= 0 {
 		return ctx.Err()
 	}
 	if deadline, ok := ctx.Deadline(); ok {
