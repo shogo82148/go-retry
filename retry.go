@@ -24,6 +24,8 @@ type Policy struct {
 	MaxCount int
 
 	// Jitter adds random delay.
+	// Zero means no jitter.
+	// Negative value shorten the delay.
 	Jitter time.Duration
 
 	mu   sync.Mutex
@@ -43,7 +45,7 @@ type Retrier struct {
 
 // Start starts retrying
 func (p *Policy) Start(ctx context.Context) *Retrier {
-	maxDelay := p.MinDelay
+	maxDelay := p.MaxDelay
 	if maxDelay < p.MinDelay {
 		maxDelay = p.MinDelay
 	}
@@ -115,7 +117,8 @@ func MarkPermanent(err error) error {
 }
 
 func (p *Policy) randomJitter() time.Duration {
-	if p.Jitter == 0 {
+	jitter := int64(p.Jitter)
+	if jitter == 0 {
 		return 0
 	}
 
@@ -130,7 +133,10 @@ func (p *Policy) randomJitter() time.Duration {
 		}
 		p.rand = rand.New(rand.NewSource(seed))
 	}
-	return time.Duration(p.rand.Int63n(int64(p.Jitter)))
+	if jitter < 0 {
+		return -time.Duration(p.rand.Int63n(-jitter))
+	}
+	return time.Duration(p.rand.Int63n(jitter))
 }
 
 // Continue returns whether retrying should be continued.
