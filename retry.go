@@ -41,6 +41,7 @@ type Retrier struct {
 	delay    time.Duration
 	maxDelay time.Duration
 	timer    *time.Timer
+	err      error
 }
 
 // Start starts retrying
@@ -81,6 +82,9 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 		if isPermanent(err) {
 			return err
 		}
+	}
+	if err := retrier.err; err != nil {
+		return err
 	}
 	return err
 }
@@ -153,6 +157,7 @@ func (r *Retrier) Continue() bool {
 	}
 
 	if err := r.sleepContext(r.ctx, r.delay+r.policy.randomJitter()); err != nil {
+		r.err = err
 		return false
 	}
 
@@ -163,6 +168,11 @@ func (r *Retrier) Continue() bool {
 	}
 
 	return true
+}
+
+// Err return the error that occurred during deploy.
+func (r *Retrier) Err() error {
+	return r.err
 }
 
 var testSleep func(ctx context.Context, d time.Duration) error
