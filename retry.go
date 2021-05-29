@@ -63,7 +63,7 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 		}
 
 		// short cut for calling isPermanent and Unwrap
-		if err, ok := err.(permanentError); ok {
+		if err, ok := err.(*permanentError); ok {
 			return err.error
 		}
 
