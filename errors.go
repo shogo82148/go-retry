@@ -3,7 +3,6 @@
 package retry
 
 import (
-	"errors"
 	"reflect"
 )
 
