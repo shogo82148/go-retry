@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/shogo82148/go-retry"
 )
@@ -28,6 +29,10 @@ func ExamplePolicy_Start() {
 			break
 		}
 	}
+	if err := retrier.Err(); err != nil {
+		log.Fatal(err)
+	}
+
 	// Output:
 	// #1: unstableFunc is called!
 	// #2: unstableFunc is called!
@@ -41,16 +46,20 @@ func ExamplePolicy_Do() {
 	}
 
 	count := 0
-	policy.Do(context.Background(), func() error {
+	err := policy.Do(context.Background(), func() error {
 		count++
 		fmt.Printf("#%d: unstable func is called!\n", count)
 		return errors.New("some error!")
 	})
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	// Output:
 	// #1: unstable func is called!
 	// #2: unstable func is called!
 	// #3: unstable func is called!
+	// some error!
 }
 
 func ExampleMarkPermanent() {

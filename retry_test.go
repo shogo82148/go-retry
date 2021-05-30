@@ -305,3 +305,17 @@ func TestDo_WithPermanentError(t *testing.T) {
 		t.Errorf("want %d, got %d", 3, count)
 	}
 }
+
+func TestDo_Deadline(t *testing.T) {
+	policy := &Policy{
+		MinDelay: time.Second,
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	err := policy.Do(ctx, func() error {
+		return errors.New("some error")
+	})
+	if err != context.DeadlineExceeded {
+		t.Errorf("want %v, got %v", context.DeadlineExceeded, err)
+	}
+}
