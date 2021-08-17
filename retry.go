@@ -66,7 +66,12 @@ func (p *Policy) Start(ctx context.Context) *Retrier {
 // If the error implements interface{ Temporary() bool } and Temporary() returns false,
 // Do doesn't retry and returns the error.
 func (p *Policy) Do(ctx context.Context, f func() error) error {
+	type Temporary interface {
+		Temporary() bool
+	}
 	var err error
+	var target *Temporary
+
 	retrier := p.Start(ctx)
 	for retrier.Continue() {
 		err = f()
@@ -79,24 +84,20 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 			return err.error
 		}
 
-		if isPermanent(err) {
-			return err
+		if target == nil {
+			// lazy allocation of target
+			target = new(Temporary)
+		}
+		if errorsAs(err, target) {
+			if !(*target).Temporary() {
+				return err
+			}
 		}
 	}
 	if err := retrier.err; err != nil {
 		return err
 	}
 	return err
-}
-
-func isPermanent(err error) bool {
-	var target interface {
-		Temporary() bool
-	}
-	if errorsAs(err, &target) {
-		return !target.Temporary()
-	}
-	return false
 }
 
 type permanentError struct {
