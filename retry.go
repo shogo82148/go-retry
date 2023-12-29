@@ -2,11 +2,7 @@ package retry
 
 import (
 	"context"
-	crand "crypto/rand"
-	"encoding/binary"
 	"errors"
-	"math/rand"
-	"sync"
 	"time"
 )
 
@@ -28,9 +24,6 @@ type Policy struct {
 	// Zero means no jitter.
 	// Negative value shorten the delay.
 	Jitter time.Duration
-
-	mu   sync.Mutex
-	rand *rand.Rand
 }
 
 // Retrier handles retrying.
@@ -120,29 +113,6 @@ func (e *permanentError) Unwrap() error {
 // It returns the error that implements interface{ Temporary() bool } and Temporary() returns false.
 func MarkPermanent(err error) error {
 	return &permanentError{err}
-}
-
-func (p *Policy) randomJitter() time.Duration {
-	jitter := int64(p.Jitter)
-	if jitter == 0 {
-		return 0
-	}
-
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.rand == nil {
-		// initialize rand using crypto/rand
-		var seed int64
-		if err := binary.Read(crand.Reader, binary.LittleEndian, &seed); err != nil {
-			seed = time.Now().UnixNano() // fall back to timestamp
-		}
-		p.rand = rand.New(rand.NewSource(seed))
-	}
-	if jitter < 0 {
-		return -time.Duration(p.rand.Int63n(-jitter))
-	}
-	return time.Duration(p.rand.Int63n(jitter))
 }
 
 // Continue returns whether retrying should be continued.
