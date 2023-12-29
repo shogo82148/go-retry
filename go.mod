@@ -1,3 +1,3 @@
 module github.com/shogo82148/go-retry
 
-go 1.17
+go 1.18
