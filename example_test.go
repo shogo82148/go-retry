@@ -75,3 +75,25 @@ func ExampleMarkPermanent() {
 	// unstable func is called!
 	// some error!
 }
+
+func ExampleDoValue() {
+	policy := &retry.Policy{
+		MaxCount: 3,
+	}
+
+	count := 0
+	_, err := retry.DoValue(context.Background(), policy, func() (int, error) {
+		count++
+		fmt.Printf("#%d: unstable func is called!\n", count)
+		return 0, errors.New("some error!")
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Output:
+	// #1: unstable func is called!
+	// #2: unstable func is called!
+	// #3: unstable func is called!
+	// some error!
+}
