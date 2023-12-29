@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 )
 
 //go:noinline
@@ -55,4 +56,20 @@ func BenchmarkDoSuccess(b *testing.B) {
 			return nil
 		})
 	}
+}
+
+func BenchmarkDo_Parallel(b *testing.B) {
+	err := errors.New("error")
+	policy := &Policy{
+		MaxCount: 100,
+		Jitter:   1 * time.Nanosecond,
+	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			policy.Do(context.Background(), func() error {
+				dummyFunc()
+				return err
+			})
+		}
+	})
 }
