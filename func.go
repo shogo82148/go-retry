@@ -12,11 +12,8 @@ import (
 // DoValue doesn't retry and returns the error.
 func DoValue[T any](ctx context.Context, policy *Policy, f func() (T, error)) (T, error) {
 	var zero T
-	type Temporary interface {
-		Temporary() bool
-	}
 	var err error
-	var target *Temporary
+	var target *temporary
 
 	retrier := policy.Start(ctx)
 	for retrier.Continue() {
@@ -33,7 +30,7 @@ func DoValue[T any](ctx context.Context, policy *Policy, f func() (T, error)) (T
 
 		if target == nil {
 			// lazy allocation of target
-			target = new(Temporary)
+			target = new(temporary)
 		}
 		if errors.As(err, target) {
 			if !(*target).Temporary() {
