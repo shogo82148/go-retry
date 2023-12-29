@@ -4,6 +4,7 @@ import (
 	"context"
 	crand "crypto/rand"
 	"encoding/binary"
+	"errors"
 	"math/rand"
 	"sync"
 	"time"
@@ -88,7 +89,7 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 			// lazy allocation of target
 			target = new(Temporary)
 		}
-		if errorsAs(err, target) {
+		if errors.As(err, target) {
 			if !(*target).Temporary() {
 				return err
 			}
