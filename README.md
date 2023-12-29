@@ -85,6 +85,40 @@ func main() {
 }
 ```
 
+```go
+package main
+
+import (
+    "context"
+    "errors"
+    "fmt"
+    "time"
+
+    "github.com/shogo82148/go-retry"
+)
+
+type Result int
+
+func DoSomething(ctx context.Context) (Result, error) {
+    // do something here that should to do exponential backoff https://en.wikipedia.org/wiki/Exponential_backoff
+    return 0, errors.New("fails")
+}
+
+var policy = retry.Policy{
+    MinDelay: 100 * time.Millisecond,
+    MaxDelay: time.Second,
+    MaxCount: 10,
+}
+
+func DoSomethingWithRetry(ctx context.Context) (Result, error) {
+    return retry.DoValue(ctx, policy, DoSomething)
+}
+
+func main() {
+    fmt.Println(DoSomethingWithRetry(context.Background()))
+}
+```
+
 ## PRIOR ARTS
 
 This package is based on [lestrrat-go/backoff](https://github.com/lestrrat-go/backoff) and [Yak Shaving With Backoff Libraries in Go](https://medium.com/@lestrrat/yak-shaving-with-backoff-libraries-in-go-80240f0aa30c).
