@@ -266,6 +266,7 @@ func TestDo_Success(t *testing.T) {
 
 func TestDo_MarkPermanent(t *testing.T) {
 	permanentErr := errors.New("permanent error")
+	// TestDo_MarkPermanent checks that a permanent error stops retries after one occurrence as expected.
 	policy := &Policy{MaxCount: 10}
 	count := 0
 	err := policy.Do(context.Background(), func() error {
