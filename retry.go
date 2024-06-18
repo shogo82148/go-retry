@@ -89,6 +89,7 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 		return err
 	}
 	if err, ok := err.(*temporaryError); ok {
+		// Unwrap the error if it's marked as temporary.
 		return err.error
 	}
 	return err
