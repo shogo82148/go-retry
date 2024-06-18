@@ -88,6 +88,9 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 	if err := retrier.err; err != nil {
 		return err
 	}
+	if err, ok := err.(*temporaryError); ok {
+		return err.error
+	}
 	return err
 }
 
@@ -116,6 +119,27 @@ func (e *permanentError) Unwrap() error {
 // It returns the error that implements interface{ Temporary() bool } and Temporary() returns false.
 func MarkPermanent(err error) error {
 	return &permanentError{err}
+}
+
+type temporaryError struct {
+	error
+}
+
+// implements interface{ Temporary() bool }
+// Inspecting errors https://dave.cheney.net/2014/12/24/inspecting-errors
+func (e *temporaryError) Temporary() bool {
+	return true
+}
+
+// Unwrap implements errors.Wrapper.
+func (e *temporaryError) Unwrap() error {
+	return e.error
+}
+
+// MarkTemporary marks err as a temporary error.
+// It returns the error that implements interface{ Temporary() bool } and Temporary() returns true.
+func MarkTemporary(err error) error {
+	return &temporaryError{err}
 }
 
 // Continue returns whether retrying should be continued.
