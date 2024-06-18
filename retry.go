@@ -137,8 +137,9 @@ func (e *temporaryError) Unwrap() error {
 	return e.error
 }
 
-// MarkTemporary marks err as a temporary error.
-// It returns the error that implements interface{ Temporary() bool } and Temporary() returns true.
+// MarkTemporary wraps an error as a temporary error, allowing retry mechanisms to handle it appropriately.
+// This is especially useful in scenarios where errors may not require immediate termination of a process,
+// but rather can be resolved through retrying operations.
 func MarkTemporary(err error) error {
 	return &temporaryError{err}
 }
