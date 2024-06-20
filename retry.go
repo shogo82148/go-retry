@@ -70,8 +70,11 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 			return nil
 		}
 
-		// short cut for calling isPermanent and Unwrap
-		if err, ok := err.(*permanentError); ok {
+		// short cut for calling Unwrap
+		if err, ok := err.(*myError); ok {
+			if err.temporary {
+				continue
+			}
 			return err.error
 		}
 
@@ -88,6 +91,10 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 	if err := retrier.err; err != nil {
 		return err
 	}
+	if err, ok := err.(*myError); ok {
+		// Unwrap the error if it's marked as temporary.
+		return err.error
+	}
 	return err
 }
 
@@ -95,27 +102,35 @@ type temporary interface {
 	Temporary() bool
 }
 
-var _ temporary = (*permanentError)(nil)
+var _ temporary = (*myError)(nil)
 
-type permanentError struct {
+type myError struct {
 	error
+	temporary bool
 }
 
 // implements interface{ Temporary() bool }
 // Inspecting errors https://dave.cheney.net/2014/12/24/inspecting-errors
-func (e *permanentError) Temporary() bool {
-	return false
+func (e *myError) Temporary() bool {
+	return e.temporary
 }
 
 // Unwrap implements errors.Wrapper.
-func (e *permanentError) Unwrap() error {
+func (e *myError) Unwrap() error {
 	return e.error
 }
 
 // MarkPermanent marks err as a permanent error.
 // It returns the error that implements interface{ Temporary() bool } and Temporary() returns false.
 func MarkPermanent(err error) error {
-	return &permanentError{err}
+	return &myError{err, false}
+}
+
+// MarkTemporary wraps an error as a temporary error, allowing retry mechanisms to handle it appropriately.
+// This is especially useful in scenarios where errors may not require immediate termination of a process,
+// but rather can be resolved through retrying operations.
+func MarkTemporary(err error) error {
+	return &myError{err, true}
 }
 
 // Continue returns whether retrying should be continued.
