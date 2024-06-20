@@ -23,8 +23,11 @@ func DoValue[T any](ctx context.Context, policy *Policy, f func() (T, error)) (T
 			return v, nil
 		}
 
-		// short cut for calling isPermanent and Unwrap
-		if err, ok := err.(*permanentError); ok {
+		// short cut for calling Unwrap
+		if err, ok := err.(*myError); ok {
+			if err.temporary {
+				continue
+			}
 			return zero, err.error
 		}
 
@@ -40,6 +43,10 @@ func DoValue[T any](ctx context.Context, policy *Policy, f func() (T, error)) (T
 	}
 	if err := retrier.err; err != nil {
 		return zero, err
+	}
+	if err, ok := err.(*myError); ok {
+		// Unwrap the error if it's marked as temporary.
+		return zero, err.error
 	}
 	return zero, err
 }
