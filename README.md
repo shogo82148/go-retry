@@ -141,6 +141,6 @@ The retry mechanism will proceed unless the error is marked as non-retryable by 
 ## PRIOR ARTS
 
 This package is based on [lestrrat-go/backoff](https://github.com/lestrrat-go/backoff) and [Yak Shaving With Backoff Libraries in Go](https://medium.com/@lestrrat/yak-shaving-with-backoff-libraries-in-go-80240f0aa30c).
-lestrrat-go/backoff's interface is so cool, but I want more simple one.
+lestrrat-go/backoff's interface is so cool, but I want a simpler one.
 
 [Songmu/retry](https://github.com/Songmu/retry) is very simple, but it is too simple for me.
