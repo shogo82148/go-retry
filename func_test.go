@@ -56,6 +56,9 @@ func TestDoValue_WrappedMarkPermanent(t *testing.T) {
 	if err == nil {
 		t.Errorf("want error is %#v, got %#v", err, permanentErr)
 	}
+	if !errors.Is(err, permanentErr) {
+		t.Errorf("expected %v to be wrapped in returned error, got %v", permanentErr, err)
+	}
 	if count != 1 {
 		t.Errorf("want %d, got %d", 1, count)
 	}
