@@ -174,7 +174,7 @@ func (r *Retrier) sleepContext(ctx context.Context, d time.Duration) error {
 	}
 
 	if d <= 0 {
-		return ctx.Err()
+		return nil
 	}
 	if deadline, ok := ctx.Deadline(); ok {
 		if time.Until(deadline) < d {
