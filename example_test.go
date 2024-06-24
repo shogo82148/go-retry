@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/shogo82148/go-retry"
+	"github.com/shogo82148/go-retry/v2"
 )
 
 func ExamplePolicy_Start() {
