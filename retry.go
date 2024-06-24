@@ -72,7 +72,7 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 
 		// short cut for calling Unwrap
 		if err, ok := err.(*myError); ok {
-			if err.temporary {
+			if err.tmp {
 				continue
 			}
 			return err.error
@@ -83,7 +83,7 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 			target = new(temporary)
 		}
 		if errors.As(err, target) {
-			if !(*target).Temporary() {
+			if !(*target).temporary() {
 				return err
 			}
 		}
@@ -99,20 +99,20 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 }
 
 type temporary interface {
-	Temporary() bool
+	temporary() bool
 }
 
 var _ temporary = (*myError)(nil)
 
 type myError struct {
 	error
-	temporary bool
+	tmp bool
 }
 
 // implements interface{ Temporary() bool }
 // Inspecting errors https://dave.cheney.net/2014/12/24/inspecting-errors
-func (e *myError) Temporary() bool {
-	return e.temporary
+func (e *myError) temporary() bool {
+	return e.tmp
 }
 
 // Unwrap implements errors.Wrapper.

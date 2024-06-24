@@ -297,37 +297,6 @@ func TestDo_MarkTemporary(t *testing.T) {
 	}
 }
 
-type customError bool
-
-func (err customError) Error() string {
-	if bool(err) {
-		return "temporary error"
-	}
-	return "permanent error"
-}
-
-func (err customError) Temporary() bool {
-	return bool(err)
-}
-
-func TestDo_WithPermanentError(t *testing.T) {
-	policy := &Policy{}
-	var count int
-	err := policy.Do(context.Background(), func() error {
-		count++
-		if count < 3 {
-			return customError(true)
-		}
-		return customError(false)
-	})
-	if err != customError(false) {
-		t.Errorf("want error is %#v, got %#v", err, customError(false))
-	}
-	if count != 3 {
-		t.Errorf("want %d, got %d", 3, count)
-	}
-}
-
 func TestDo_Deadline(t *testing.T) {
 	policy := &Policy{
 		MinDelay: time.Second,

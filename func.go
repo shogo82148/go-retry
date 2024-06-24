@@ -25,7 +25,7 @@ func DoValue[T any](ctx context.Context, policy *Policy, f func() (T, error)) (T
 
 		// short cut for calling Unwrap
 		if err, ok := err.(*myError); ok {
-			if err.temporary {
+			if err.tmp {
 				continue
 			}
 			return zero, err.error
@@ -36,7 +36,7 @@ func DoValue[T any](ctx context.Context, policy *Policy, f func() (T, error)) (T
 			target = new(temporary)
 		}
 		if errors.As(err, target) {
-			if !(*target).Temporary() {
+			if !(*target).temporary() {
 				return zero, err
 			}
 		}
