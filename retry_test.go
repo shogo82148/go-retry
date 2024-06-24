@@ -330,7 +330,7 @@ func TestDo_WithPermanentError(t *testing.T) {
 
 func TestDo_Deadline(t *testing.T) {
 	policy := &Policy{
-		MinDelay: time.Second,
+		MinDelay: 2 * time.Second,
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
