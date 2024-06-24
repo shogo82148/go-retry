@@ -8,8 +8,7 @@ import (
 // DoValue executes f with retrying policy.
 // It is a shorthand of Policy.Start and Retrier.Continue.
 // If f returns an error, retry to execute f until f returns nil error.
-// If the error implements interface{ Temporary() bool } and Temporary() returns false,
-// DoValue doesn't retry and returns the error.
+// If the error is wrapped by [MarkTemporary], DoValue doesn't retry and returns the error.
 func DoValue[T any](ctx context.Context, policy *Policy, f func() (T, error)) (T, error) {
 	var zero T
 	var err error

@@ -57,8 +57,7 @@ func (p *Policy) Start(ctx context.Context) *Retrier {
 // Do executes f with retrying policy.
 // It is a shorthand of Policy.Start and Retrier.Continue.
 // If f returns an error, retry to execute f until f returns nil error.
-// If the error implements interface{ Temporary() bool } and Temporary() returns false,
-// Do doesn't retry and returns the error.
+// If the error is wrapped by [MarkTemporary], Do doesn't retry and returns the error.
 func (p *Policy) Do(ctx context.Context, f func() error) error {
 	var err error
 	var target *temporary
@@ -109,8 +108,6 @@ type myError struct {
 	tmp bool
 }
 
-// implements interface{ Temporary() bool }
-// Inspecting errors https://dave.cheney.net/2014/12/24/inspecting-errors
 func (e *myError) temporary() bool {
 	return e.tmp
 }
@@ -120,8 +117,8 @@ func (e *myError) Unwrap() error {
 	return e.error
 }
 
-// MarkPermanent marks err as a permanent error.
-// It returns the error that implements interface{ Temporary() bool } and Temporary() returns false.
+// MarkPermanent marks err as a permanent error, allowing retry mechanisms to handle it appropriately.
+// This is especially useful in scenarios where errors require immediate termination of a process.
 func MarkPermanent(err error) error {
 	return &myError{err, false}
 }
