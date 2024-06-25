@@ -133,6 +133,8 @@ the retry mechanism was modified to respect the result of the method.
 In v2, the package doesn't check the Temporary() method.
 The retry mechanism will proceed unless the error is marked as non-retryable by MarkPermanent.
 
+If you want the same behavior as v1, you need to rewrite it as follows:
+
 ```go
 // v1 code
 policy.Do(func() error {
@@ -148,7 +150,7 @@ policy.Do(func() error {
     }
     var tmp temporary
     if errors.As(err, &tmp) && !tmp.Temporary() {
-        return retry.MarkTemporary(err)
+        return retry.MarkPermanent(err)
     }
     return err
 })
