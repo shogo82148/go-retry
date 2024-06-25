@@ -140,22 +140,22 @@ The retry mechanism will proceed unless the error is marked as non-retryable by 
 
 ```go
 // v1 code
-retry.Do(policy, func() error {
-  return DoSomething()
+policy.Do(func() error {
+    return DoSomething()
 })
 
 // v2 code
-retry.Do(policy, func() error {
-  err := DoSomething()
+policy.Do(func() error {
+    err := DoSomething()
 
-  interface temporary {
-    Temporary() bool
-  }
-  var tmp temporary
-  if errors.As(err, &tmp) && !tmp.Temporary() {
-    return retry.MarkTemporary(err)
-  }
-  return err
+    interface temporary {
+        Temporary() bool
+    }
+    var tmp temporary
+    if errors.As(err, &tmp) && !tmp.Temporary() {
+        return retry.MarkTemporary(err)
+    }
+    return err
 })
 ```
 
