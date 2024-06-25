@@ -57,8 +57,7 @@ func (p *Policy) Start(ctx context.Context) *Retrier {
 // Do executes f with retrying policy.
 // It is a shorthand of Policy.Start and Retrier.Continue.
 // If f returns an error, retry to execute f until f returns nil error.
-// If the error implements interface{ Temporary() bool } and Temporary() returns false,
-// Do doesn't retry and returns the error.
+// If the error is wrapped by [MarkTemporary], Do doesn't retry and returns the error.
 func (p *Policy) Do(ctx context.Context, f func() error) error {
 	var err error
 	var target *temporary
@@ -72,7 +71,7 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 
 		// short cut for calling Unwrap
 		if err, ok := err.(*myError); ok {
-			if err.temporary {
+			if err.tmp {
 				continue
 			}
 			return err.error
@@ -83,7 +82,7 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 			target = new(temporary)
 		}
 		if errors.As(err, target) {
-			if !(*target).Temporary() {
+			if !(*target).temporary() {
 				return err
 			}
 		}
@@ -99,20 +98,18 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 }
 
 type temporary interface {
-	Temporary() bool
+	temporary() bool
 }
 
 var _ temporary = (*myError)(nil)
 
 type myError struct {
 	error
-	temporary bool
+	tmp bool
 }
 
-// implements interface{ Temporary() bool }
-// Inspecting errors https://dave.cheney.net/2014/12/24/inspecting-errors
-func (e *myError) Temporary() bool {
-	return e.temporary
+func (e *myError) temporary() bool {
+	return e.tmp
 }
 
 // Unwrap implements errors.Wrapper.
@@ -120,8 +117,8 @@ func (e *myError) Unwrap() error {
 	return e.error
 }
 
-// MarkPermanent marks err as a permanent error.
-// It returns the error that implements interface{ Temporary() bool } and Temporary() returns false.
+// MarkPermanent marks err as a permanent error, allowing retry mechanisms to handle it appropriately.
+// This is especially useful in scenarios where errors require immediate termination of a process.
 func MarkPermanent(err error) error {
 	return &myError{err, false}
 }

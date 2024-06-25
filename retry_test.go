@@ -281,6 +281,22 @@ func TestDo_MarkPermanent(t *testing.T) {
 	}
 }
 
+func TestDo_MarkPermanent_Wrapped(t *testing.T) {
+	permanentErr := fmt.Errorf("retry: %w", MarkPermanent(errors.New("permanent error")))
+	policy := &Policy{MaxCount: 10}
+	count := 0
+	err := policy.Do(context.Background(), func() error {
+		count++
+		return permanentErr
+	})
+	if err != permanentErr {
+		t.Errorf("want error is %#v, got %#v", err, permanentErr)
+	}
+	if count != 1 {
+		t.Errorf("want %d, got %d", 1, count)
+	}
+}
+
 func TestDo_MarkTemporary(t *testing.T) {
 	temporaryErr := errors.New("temporary error")
 	policy := &Policy{MaxCount: 10}
@@ -297,34 +313,19 @@ func TestDo_MarkTemporary(t *testing.T) {
 	}
 }
 
-type customError bool
-
-func (err customError) Error() string {
-	if bool(err) {
-		return "temporary error"
-	}
-	return "permanent error"
-}
-
-func (err customError) Temporary() bool {
-	return bool(err)
-}
-
-func TestDo_WithPermanentError(t *testing.T) {
-	policy := &Policy{}
-	var count int
+func TestDo_MarkTemporary_Wrapped(t *testing.T) {
+	temporaryErr := fmt.Errorf("retry: %w", MarkTemporary(errors.New("temporary error")))
+	policy := &Policy{MaxCount: 10}
+	count := 0
 	err := policy.Do(context.Background(), func() error {
 		count++
-		if count < 3 {
-			return customError(true)
-		}
-		return customError(false)
+		return temporaryErr
 	})
-	if err != customError(false) {
-		t.Errorf("want error is %#v, got %#v", err, customError(false))
+	if err != temporaryErr {
+		t.Errorf("want error is %#v, got %#v", err, temporaryErr)
 	}
-	if count != 3 {
-		t.Errorf("want %d, got %d", 3, count)
+	if count != 10 {
+		t.Errorf("want %d, got %d", 10, count)
 	}
 }
 
@@ -334,10 +335,16 @@ func TestDo_Deadline(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
+	start := time.Now()
 	err := policy.Do(ctx, func() error {
 		return errors.New("some error")
 	})
 	if err != context.DeadlineExceeded {
 		t.Errorf("want %v, got %v", context.DeadlineExceeded, err)
+	}
+	d := time.Since(start)
+	if d > 500*time.Millisecond {
+		t.Errorf("want 0s, got %s", d)
 	}
 }
