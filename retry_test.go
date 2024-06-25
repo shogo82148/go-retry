@@ -335,10 +335,16 @@ func TestDo_Deadline(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
+	start := time.Now()
 	err := policy.Do(ctx, func() error {
 		return errors.New("some error")
 	})
 	if err != context.DeadlineExceeded {
 		t.Errorf("want %v, got %v", context.DeadlineExceeded, err)
+	}
+	d := time.Since(start)
+	if d > 500*time.Millisecond {
+		t.Errorf("want 0s, got %s", d)
 	}
 }
