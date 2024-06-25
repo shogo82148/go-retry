@@ -74,13 +74,7 @@ var policy = retry.Policy{
 }
 
 func DoSomethingWithRetry(ctx context.Context) (Result, error) {
-    retrier := policy.Start(ctx)
-    for retrier.Continue() {
-        if res, err := DoSomething(ctx); err == nil {
-            return res, nil
-        }
-    }
-    return 0, errors.New("tried very hard, but no luck")
+    return retry.DoValue(ctx, policy, DoSomething)
 }
 
 func main() {
