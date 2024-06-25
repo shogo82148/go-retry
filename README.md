@@ -98,7 +98,7 @@ import (
     "fmt"
     "time"
 
-    "github.com/shogo82148/go-retry"
+    "github.com/shogo82148/go-retry/v2"
 )
 
 type Result int
