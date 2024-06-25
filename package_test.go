@@ -16,6 +16,7 @@ func (err customError) Error() string {
 	return "permanent error"
 }
 
+// The temporary method will be ignored by the retry package.
 func (err customError) temporary() bool {
 	return bool(err)
 }
@@ -36,6 +37,8 @@ func TestDo_WithPermanentError(t *testing.T) {
 	if err != customError(false) {
 		t.Errorf("want error is %#v, got %#v", err, customError(false))
 	}
+
+	// defining the temporary method out of the package will not work
 	if count != 10 {
 		t.Errorf("want %d, got %d", 10, count)
 	}
