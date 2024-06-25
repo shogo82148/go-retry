@@ -138,6 +138,27 @@ the retry mechanism was modified to respect the result of the method.
 In v2, the package doesn't check the Temporary() method.
 The retry mechanism will proceed unless the error is marked as non-retryable by MarkPermanent.
 
+```go
+// v1 code
+retry.Do(policy, func() error {
+  return DoSomething()
+})
+
+// v2 code
+retry.Do(policy, func() error {
+  err := DoSomething()
+
+  interface temporary {
+    Temporary() bool
+  }
+  var tmp temporary
+  if errors.As(err, &tmp) && !tmp.Temporary() {
+    return retry.MarkTemporary(err)
+  }
+  return err
+})
+```
+
 ## PRIOR ARTS
 
 This package is based on [lestrrat-go/backoff](https://github.com/lestrrat-go/backoff) and [Yak Shaving With Backoff Libraries in Go](https://medium.com/@lestrrat/yak-shaving-with-backoff-libraries-in-go-80240f0aa30c).
