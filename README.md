@@ -1,5 +1,5 @@
 [![Build Status](https://github.com/shogo82148/go-retry/workflows/Test/badge.svg)](https://github.com/shogo82148/go-retry/actions)
-[![PkgGoDev](https://pkg.go.dev/badge/github.com/shogo82148/go-retry)](https://pkg.go.dev/github.com/shogo82148/go-retry)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/shogo82148/go-retry/v2)](https://pkg.go.dev/github.com/shogo82148/go-retry/v2)
 [![Coverage Status](https://coveralls.io/repos/github/shogo82148/go-retry/badge.svg?branch=main)](https://coveralls.io/github/shogo82148/go-retry?branch=main)
 
 # retry
