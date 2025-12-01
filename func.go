@@ -5,10 +5,14 @@ import (
 	"errors"
 )
 
-// DoValue executes f with retrying policy.
+// DoValue executes f with retrying policy and returns the result value.
 // It is a shorthand of Policy.Start and Retrier.Continue.
-// If f returns an error, retry to execute f until f returns nil error.
-// If the error is wrapped by [MarkTemporary], DoValue doesn't retry and returns the error.
+// If f returns an error, DoValue retries until f succeeds or the retry limit is reached.
+//
+// Error handling:
+//   - [MarkPermanent]: stops retrying immediately and returns the unwrapped error
+//   - [MarkTemporary]: continues retrying (explicit marker for retryable errors)
+//   - Unmarked errors: treated as temporary and retried
 func DoValue[T any](ctx context.Context, policy *Policy, f func() (T, error)) (T, error) {
 	var zero T
 	var err error

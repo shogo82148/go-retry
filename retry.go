@@ -56,8 +56,12 @@ func (p *Policy) Start(ctx context.Context) *Retrier {
 
 // Do executes f with retrying policy.
 // It is a shorthand of Policy.Start and Retrier.Continue.
-// If f returns an error, retry to execute f until f returns nil error.
-// If the error is wrapped by [MarkTemporary], Do doesn't retry and returns the error.
+// If f returns an error, Do retries until f returns nil or the retry limit is reached.
+//
+// Error handling:
+//   - [MarkPermanent]: stops retrying immediately and returns the unwrapped error
+//   - [MarkTemporary]: continues retrying (explicit marker for retryable errors)
+//   - Unmarked errors: treated as temporary and retried
 func (p *Policy) Do(ctx context.Context, f func() error) error {
 	var err error
 	var target *temporary
