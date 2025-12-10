@@ -5,6 +5,7 @@ package retry
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -228,4 +229,23 @@ func TestSleepContext(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestDo_WithMaxCount(t *testing.T) {
+	policy := &Policy{
+		MaxCount: 3,
+	}
+	var myErr error
+	var count int
+	err := policy.Do(context.Background(), func() error {
+		count++
+		myErr = fmt.Errorf("error %d", count)
+		return myErr
+	})
+	if err != myErr {
+		t.Errorf("want err %v, got %v", myErr, err)
+	}
+	if count != 3 {
+		t.Errorf("want %d, got %d", 3, count)
+	}
 }
