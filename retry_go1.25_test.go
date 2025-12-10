@@ -237,13 +237,34 @@ func TestDo_WithMaxCount(t *testing.T) {
 	}
 	var myErr error
 	var count int
-	err := policy.Do(context.Background(), func() error {
+	err := policy.Do(t.Context(), func() error {
 		count++
 		myErr = fmt.Errorf("error %d", count)
 		return myErr
 	})
 	if err != myErr {
 		t.Errorf("want err %v, got %v", myErr, err)
+	}
+	if count != 3 {
+		t.Errorf("want %d, got %d", 3, count)
+	}
+}
+
+func TestDo_Success(t *testing.T) {
+	policy := &Policy{
+		MinDelay: -time.Second,
+		MaxCount: -1,
+	}
+	var count int
+	err := policy.Do(t.Context(), func() error {
+		count++
+		if count < 3 {
+			return fmt.Errorf("error %d", count)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 	if count != 3 {
 		t.Errorf("want %d, got %d", 3, count)
