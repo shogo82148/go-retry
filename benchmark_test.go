@@ -39,7 +39,7 @@ func BenchmarkDo(b *testing.B) {
 		MaxCount: 100,
 	}
 	for i := 0; i < b.N; i++ {
-		policy.Do(context.Background(), func() error {
+		_ = policy.Do(context.Background(), func() error {
 			dummyFunc()
 			return err
 		})
@@ -51,10 +51,12 @@ func BenchmarkDoSuccess(b *testing.B) {
 		MaxCount: 100,
 	}
 	for i := 0; i < b.N; i++ {
-		policy.Do(context.Background(), func() error {
+		if err := policy.Do(context.Background(), func() error {
 			dummyFunc()
 			return nil
-		})
+		}); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -66,7 +68,7 @@ func BenchmarkDo_Parallel(b *testing.B) {
 	}
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			policy.Do(context.Background(), func() error {
+			_ = policy.Do(context.Background(), func() error {
 				dummyFunc()
 				return err
 			})
