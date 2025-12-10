@@ -305,3 +305,19 @@ func TestDo_MarkPermanent_Wrapped(t *testing.T) {
 		t.Errorf("want %d, got %d", 1, count)
 	}
 }
+
+func TestDo_MarkTemporary(t *testing.T) {
+	temporaryErr := errors.New("temporary error")
+	policy := &Policy{MaxCount: 10}
+	count := 0
+	err := policy.Do(t.Context(), func() error {
+		count++
+		return MarkTemporary(temporaryErr)
+	})
+	if err != temporaryErr {
+		t.Errorf("want error is %#v, got %#v", err, temporaryErr)
+	}
+	if count != 10 {
+		t.Errorf("want %d, got %d", 10, count)
+	}
+}
