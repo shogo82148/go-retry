@@ -3,6 +3,7 @@ package retry
 import (
 	"context"
 	"errors"
+	"math/rand/v2"
 	"time"
 )
 
@@ -99,6 +100,18 @@ func (p *Policy) Do(ctx context.Context, f func() error) error {
 		return err.error
 	}
 	return err
+}
+
+func (p *Policy) randomJitter() time.Duration {
+	jitter := p.Jitter
+	if jitter == 0 {
+		return 0
+	}
+
+	if jitter < 0 {
+		return -rand.N(-jitter)
+	}
+	return rand.N(jitter)
 }
 
 type temporary interface {
