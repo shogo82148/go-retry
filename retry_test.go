@@ -1,3 +1,6 @@
+//go:build !go1.25
+// +build !go1.25
+
 package retry
 
 import (
