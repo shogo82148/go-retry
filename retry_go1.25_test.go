@@ -38,3 +38,30 @@ func TestRetry(t *testing.T) {
 		}
 	})
 }
+
+func TestRetry_NoMaxDelay(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		policy := &Policy{
+			MinDelay: time.Second,
+
+			// it means that MaxDelay and MinDelay are same value
+			MaxDelay: 0,
+		}
+
+		retrier := policy.Start(t.Context())
+		if !retrier.Continue() {
+			t.Error("want to continue, but not")
+		}
+
+		for range 10 {
+			start := time.Now()
+			if !retrier.Continue() {
+				t.Error("want to continue, but not")
+			}
+			delay := time.Since(start)
+			if delay != time.Second {
+				t.Errorf("want %s, got %s", time.Second, delay)
+			}
+		}
+	})
+}
