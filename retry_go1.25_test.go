@@ -5,6 +5,7 @@ package retry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"testing/synctest"
@@ -268,5 +269,23 @@ func TestDo_Success(t *testing.T) {
 	}
 	if count != 3 {
 		t.Errorf("want %d, got %d", 3, count)
+	}
+}
+
+func TestDo_MarkPermanent(t *testing.T) {
+	permanentErr := errors.New("permanent error")
+	policy := &Policy{MaxCount: 10}
+	count := 0
+	err := policy.Do(t.Context(), func() error {
+		count++
+
+		// TestDo_MarkPermanent checks that a permanent error stops retries after one occurrence as expected.
+		return MarkPermanent(permanentErr)
+	})
+	if err != permanentErr {
+		t.Errorf("want error is %#v, got %#v", err, permanentErr)
+	}
+	if count != 1 {
+		t.Errorf("want %d, got %d", 1, count)
 	}
 }
