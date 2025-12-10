@@ -133,3 +133,34 @@ func TestRetry_WithNegativeJitter(t *testing.T) {
 		}
 	})
 }
+
+func TestRetry_WithMaxCount(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		policy := &Policy{
+			MaxCount: 3,
+		}
+		start := time.Now()
+		retrier := policy.Start(t.Context())
+
+		// Continue returns true in first 3 calls.
+		if !retrier.Continue() {
+			t.Error("want to continue, but got not")
+		}
+		if !retrier.Continue() {
+			t.Error("want to continue, but got not")
+		}
+		if !retrier.Continue() {
+			t.Error("want to continue, but got not")
+		}
+
+		// give up :(
+		if retrier.Continue() {
+			t.Error("want not to continue, but do")
+		}
+
+		delay := time.Since(start)
+		if delay != 0 {
+			t.Errorf("want 0s, got %s", delay)
+		}
+	})
+}
