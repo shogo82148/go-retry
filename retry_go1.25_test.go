@@ -4,6 +4,7 @@
 package retry
 
 import (
+	"context"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -162,5 +163,69 @@ func TestRetry_WithMaxCount(t *testing.T) {
 		if delay != 0 {
 			t.Errorf("want 0s, got %s", delay)
 		}
+	})
+}
+
+func TestSleepContext(t *testing.T) {
+	t.Run("normal", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			ctx := t.Context()
+			policy := &Policy{}
+			retrier := policy.Start(ctx)
+			start := time.Now()
+			err := retrier.sleepContext(ctx, time.Second)
+			if err != nil {
+				t.Error(err)
+			}
+			d := time.Since(start)
+			if d != time.Second {
+				t.Errorf("want 1s, got %s", d)
+			}
+		})
+	})
+
+	t.Run("cancel", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			ctx := t.Context()
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
+			go func() {
+				time.Sleep(500 * time.Millisecond)
+				cancel()
+			}()
+
+			policy := &Policy{}
+			retrier := policy.Start(ctx)
+			start := time.Now()
+			err := retrier.sleepContext(ctx, time.Second)
+			if err != context.Canceled {
+				t.Errorf("want context.Canceled, got %v", err)
+			}
+			d := time.Since(start)
+			if d != 500*time.Millisecond {
+				t.Errorf("want 500ms, got %s", d)
+			}
+		})
+	})
+
+	t.Run("deadline", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			ctx := t.Context()
+			ctx, cancel := context.WithDeadline(ctx, time.Now().Add(500*time.Millisecond))
+			defer cancel()
+
+			policy := &Policy{}
+			retrier := policy.Start(ctx)
+			start := time.Now()
+			err := retrier.sleepContext(ctx, time.Second)
+			if err != context.DeadlineExceeded {
+				t.Errorf("want context.DeadlineExceeded, got %v", err)
+			}
+			d := time.Since(start)
+			if d != 0 {
+				t.Errorf("want 0s, got %s", d)
+			}
+		})
 	})
 }
